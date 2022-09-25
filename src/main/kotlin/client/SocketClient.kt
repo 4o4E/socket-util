@@ -10,6 +10,7 @@ import java.io.BufferedWriter
 import java.io.InputStream
 import java.io.OutputStream
 import java.net.Socket
+import java.util.concurrent.atomic.AtomicBoolean
 
 class SocketClient(
     val name: String,
@@ -24,8 +25,17 @@ class SocketClient(
     private lateinit var reader: BufferedReader
     private lateinit var writer: BufferedWriter
 
+    private val close = AtomicBoolean(false)
+
     fun start() {
-        socket = Socket(address, port)
+        do {
+            try {
+                socket = Socket(address, port)
+            } catch (e: Exception) {
+                log.warn("连接到${address}:${port}失败, 将在3秒后重试", e)
+                Thread.sleep(3000)
+            }
+        } while (!this::socket.isInitialized)
         input = socket.getInputStream()
         output = socket.getOutputStream()
         reader = input.bufferedReader()
@@ -41,11 +51,16 @@ class SocketClient(
         }
         log.debug { "成功与服务端`${socket.remoteSocketAddress}`建立连接" }
         while (true) {
-            packetManager.onPacket(
-                name = name,
-                packet = reader.readLine(),
-                handler = this
-            )
+            try {
+                packetManager.onPacket(
+                    name = name,
+                    packet = reader.readLine(),
+                    handler = this
+                )
+            } catch (e:Exception) {
+                if (close.get()) return
+                log.warn("与服务端`${socket.remoteSocketAddress}`通信时出现异常", e)
+            }
         }
     }
 
@@ -57,6 +72,7 @@ class SocketClient(
 
     override fun stop() {
         log.debug { "关闭与服务端`${socket.remoteSocketAddress}`的连接" }
+        close.set(true)
         reader.close()
         writer.close()
         input.close()

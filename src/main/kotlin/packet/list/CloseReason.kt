@@ -9,6 +9,7 @@ enum class CloseReason(
     UNNAMED_SOCKET("unnamed socket"),
     ILLEGAL_NAME("illegal name"),
     EXCEPTION_ON_CONNECT("exception on connect"),
+    DISCONNECT("disconnect"),
     ;
 
     fun toPacket() = ClosePacket(this).toPacket()

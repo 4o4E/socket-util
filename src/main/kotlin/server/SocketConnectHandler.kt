@@ -4,6 +4,7 @@ import top.e404.socket.SocketHandler
 import top.e404.socket.log.Log
 import top.e404.socket.packet.EPacketManager
 import java.net.Socket
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * 代表一个socket连接的处理器
@@ -25,13 +26,20 @@ class SocketConnectHandler(
     val reader = input.bufferedReader()
     val writer = output.bufferedWriter()
 
+    val close = AtomicBoolean(false)
+
     fun start() {
         while (true) {
-            handler.onPacket(
-                name = name,
-                packet = reader.readLine(),
-                handler = this
-            )
+            try {
+                handler.onPacket(
+                    name = name,
+                    packet = reader.readLine(),
+                    handler = this
+                )
+            } catch (e: Exception) {
+                if (close.get()) return
+                log.warn("与客户端`${socket.remoteSocketAddress}`通信时出现异常", e)
+            }
         }
     }
 
@@ -43,6 +51,7 @@ class SocketConnectHandler(
 
     override fun stop() {
         server.remove(this)
+        close.set(true)
         reader.close()
         writer.close()
         socket.close()
