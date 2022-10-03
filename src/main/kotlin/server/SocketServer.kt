@@ -40,13 +40,19 @@ class SocketServer(
     private val stop = AtomicBoolean(false)
     private lateinit var thread: Thread
 
+    var onStart: (SocketServer) -> Unit = {}
+
+    fun onStart(block: (SocketServer) -> Unit) {
+        onStart = block
+    }
+
     fun start() {
         thread = thread(true) {
             server = ServerSocket(port)
             while (!stop.get()) {
                 val socket = server.accept()
                 log.debug { "接收连接, addr: ${socket.remoteSocketAddress}" }
-                thread(true) socketThread@ {
+                thread(true) socketThread@{
                     // 读取第一个数据包
                     val br = socket.getInputStream().bufferedReader()
                     try {
@@ -80,6 +86,7 @@ class SocketServer(
                         socketHandler.send(HandshakePacket(data = "accept").toJson())
                         connectPool[name] = socketHandler
                         log.debug { "成功创建与`${socket.remoteSocketAddress}`的连接: `$name`" }
+                        onStart(this)
                         // 开始处理
                         socketHandler.start()
                     } catch (e: Exception) {

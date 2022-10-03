@@ -27,6 +27,12 @@ class SocketClient(
 
     private val close = AtomicBoolean(false)
 
+    var onStart: (SocketClient) -> Unit = {}
+
+    fun onStart(block: (SocketClient) -> Unit) {
+        onStart = block
+    }
+
     fun start() {
         do {
             try {
@@ -50,6 +56,7 @@ class SocketClient(
             return
         }
         log.debug { "成功与服务端`${socket.remoteSocketAddress}`建立连接" }
+        onStart(this)
         while (true) {
             try {
                 packetManager.onPacket(
