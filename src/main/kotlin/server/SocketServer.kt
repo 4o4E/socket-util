@@ -1,6 +1,7 @@
 package top.e404.socket.server
 
 import com.google.gson.JsonParser
+import top.e404.socket.SocketHandler
 import top.e404.socket.log.Log
 import top.e404.socket.log.SimpleLogImpl
 import top.e404.socket.packet.EPacketManager
@@ -27,7 +28,7 @@ class SocketServer(
     /**
      * 连接处, 连接名字 to 连接
      */
-    private val connectPool = ConcurrentHashMap<String, SocketConnectHandler>()
+    val connectPool = ConcurrentHashMap<String, SocketConnectHandler>()
 
     operator fun get(name: String) = connectPool[name]
 
@@ -45,6 +46,8 @@ class SocketServer(
     fun onStart(block: (SocketServer) -> Unit) {
         onStart = block
     }
+
+    fun getOther(handler: SocketHandler) = connectPool.filter { it.value != handler }
 
     fun start() {
         thread = thread(true) {

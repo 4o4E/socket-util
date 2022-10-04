@@ -64,7 +64,7 @@ class SocketClient(
                     packet = reader.readLine(),
                     handler = this
                 )
-            } catch (e:Exception) {
+            } catch (e: Exception) {
                 if (close.get()) return
                 log.warn("与服务端`${socket.remoteSocketAddress}`通信时出现异常", e)
             }
